@@ -51,7 +51,7 @@ public class WalkAction extends MoveAction<Vector2> {
      * @return The action ID
      */
     @Override
-    public String actionId() { return "walk"; }
+    public String actionId() { return "move"; }
     
     /**
      * Trigger the action with the direction of movement

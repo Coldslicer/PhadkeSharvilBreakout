@@ -31,4 +31,12 @@ public class Node2D extends DrawnNode {
         // Draw children relative to this
         super.draw(transform.apply(offset));
     }
+
+    public Transform getTransform() {
+        return transform;
+    }
+    public void setTransform(Transform transform) {
+        this.transform = transform;
+    }
+    
 }

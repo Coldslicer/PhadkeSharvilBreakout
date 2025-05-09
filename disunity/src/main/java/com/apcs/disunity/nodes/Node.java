@@ -39,6 +39,7 @@ public abstract class Node<T extends Node<?>> {
     @SafeVarargs
     public Node(T... children) {
         this.children = new ArrayList<>(Arrays.asList(children));
+        for (T child : children) child.setParent(this);
     }
 
     /* ================ [ METHODS ] ================ */

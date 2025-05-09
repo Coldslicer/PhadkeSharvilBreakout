@@ -1,24 +1,21 @@
 package com.apcs.ljaag;
 
-import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.function.Supplier;
 
 import com.apcs.disunity.App;
 import com.apcs.disunity.Game;
-import com.apcs.disunity.animation.Animation;
-import com.apcs.disunity.animation.AnimationSet;
 import com.apcs.disunity.camera.Camera;
 import com.apcs.disunity.input.Inputs;
+import com.apcs.disunity.math.Transform;
 import com.apcs.disunity.math.Vector2;
-import com.apcs.disunity.nodes.Node;
 import com.apcs.disunity.nodes.Node2D;
-import com.apcs.disunity.nodes.body.Body;
 import com.apcs.disunity.nodes.controller.Controller;
-import com.apcs.disunity.nodes.sprite.AnimatedSprite;
 import com.apcs.disunity.nodes.sprite.Sprite;
+import com.apcs.disunity.physics.Collider;
 import com.apcs.disunity.scenes.Scenes;
-import com.apcs.disunity.server.MultiplayerLauncher;
-import com.apcs.disunity.server.SyncHandler;
-import com.apcs.ljaag.nodes.action.TurnAction;
+import com.apcs.ljaag.nodes.BoundedBody;
 import com.apcs.ljaag.nodes.action.WalkAction;
 import com.apcs.ljaag.nodes.controller.PlayerController;
 
@@ -34,82 +31,113 @@ public class LJAAG {
 
     /* ================ [ DRIVER ] ================ */
     
-    public static void main(String[] args) throws IOException, NoSuchFieldException, IllegalAccessException, InterruptedException {
-        MultiplayerLauncher launcher = new MultiplayerLauncher(LJAAG::runApp);
-        launcher.lauch();
-    }
+    public static void main(String[] args) {
 
-    public static final int NUM_PLAYERS = 8;
-
-    private static void runApp(boolean isServer) {
-
-        // Import keybinds from a JSON file
+        Vector2 bounds = Vector2.of(480, 270);
+        BoundedBody player, ball;
+        List<Supplier<BoundedBody.Bounds>> addedColliderBodies;
         Inputs.fromJSON("keybinds.json");
-
-        // Create the game scenes
         Scenes.addScene("test", new Node2D(
-            new Sprite("background.png")
+            new Camera(),
+            player = new BoundedBody(new Transform(Vector2.ZERO, bounds, 1),
+                new Sprite("images/paddle.png"),
+                new Collider(Vector2.ZERO),
+                new PlayerController(),
+                new WalkAction()
+            ) {
+
+                @Override
+                public void initialize() {
+                    super.initialize();
+                    transform = new Transform(Vector2.of(0,100), Vector2.UNIT, 0);
+                    Collider c = getChild(Collider.class);
+                    Sprite s = getChild(Sprite.class);
+                    c.setSize(Vector2.of(s.getWidth(), s. getHeight()));
+                    c.setOffset(s.transform.pos);
+                };
+            },
+            ball = new BoundedBody(
+                addedColliderBodies = new LinkedList<>(List.of(
+                    () -> new BoundedBody.Bounds(new Transform(Vector2.ZERO, bounds, 1),true),
+                    () -> new BoundedBody.Bounds(
+                        new Transform(
+                            player.transform.pos,
+                            Vector2.of(player.getChild(Sprite.class).getWidth(), player.getChild(Sprite.class).getHeight()),
+                         1),
+                     false)
+                     )),
+                (body, dir) -> {
+                    body.setVel(body.getVel().mul(
+                        Vector2.of(
+                            switch (dir) {
+                                case LEFT, RIGHT -> -1;
+                                default -> 1;
+                            },
+                            switch (dir) {
+                                case DOWN, UP -> -1;
+                                default -> 1;
+                            }
+                        )
+                    ));
+                },
+                new Sprite("images/ball.png", new Transform(Vector2.of(0, 0), Vector2.UNIT, 0)),
+                new Collider(Vector2.ZERO),
+                new Controller() {}
+            ) {
+
+                @Override
+                public void initialize() {
+                    super.initialize();
+                    transform = new Transform(Vector2.of(100, 0), Vector2.UNIT, 0);
+                    Collider c = getChild(Collider.class);
+                    Sprite s = getChild(Sprite.class);
+                    c.setSize(Vector2.of(s.getWidth(), s.getHeight()));
+                    this.setVel(Vector2.of(100,100));
+                };
+            }
         ));
 
-        Scenes.setScene("test");
-        for (int i = 1; i <= NUM_PLAYERS+1; i++) {
-            Scenes.getScene().addChildren(instantiateCharacter(i));
-        }
-
-        registerNodeRecursive(Scenes.getScene());
-
-        int endpointId = SyncHandler.getInstance().getEndpointId();
-        // Create game application
-
         Game game = new Game(
-            Vector2.of(480, 270),
+            bounds,
             "test"
         );
 
-        if (!isServer) {
-            new App(
-                endpointId == 0 ? "[SERVER]" : "[CLIENT_" + endpointId + "]",
-                800, 
-                450,
-                game);
+        Sprite model = new Sprite("images/brick.png",false);
+        int padding = 1;
+        
+        for (int x = -bounds.xi; x < bounds.xi; x += model.getWidth() + padding) {
+            for (int y = -bounds.yi; y < 0; y += model.getHeight() + padding) {
+                Sprite brick = new Sprite("images/brick.png", new Transform(Vector2.of(x, y), Vector2.UNIT, 0));
+                addedColliderBodies.add(() -> new BoundedBody.Bounds(new Transform(brick.transform.pos, Vector2.of(brick.getWidth(),brick.getHeight()),0), false));
+                
+                Scenes.getScene().addChild(
+                    new BoundedBody(new Transform(Vector2.of(x, y), Vector2.UNIT, 0), (bo, d) -> {
+                            // System.out.println("collision");
+                            if (bo == ball) brick.setVisible(false);
+                        }, 
+                        brick,
+                        new Collider(Vector2.ZERO),
+                        new Controller() {}
+                    ) {
+
+                        @Override
+                        public void initialize() {
+                            super.initialize();
+                            Collider c = getChild(Collider.class);
+                            Sprite s = getChild(Sprite.class);
+                            c.setSize(Vector2.of(s.getWidth(), s.getHeight()));
+                        };
+                    }
+                );
+            }
         }
+
+        new App(
+            "P5 Phadke Sharvil Breakout",
+            800, 
+            450,
+            game);
 
         game.start();
-
-    }
-
-    private static Body instantiateCharacter(int clientId) {
-        boolean isPlayer = SyncHandler.getInstance().getEndpointId() == clientId;
-        Body body = new Body(
-            isPlayer ? new Camera() : new Node<>() {
-            },
-            new AnimatedSprite(
-                new AnimationSet("player/player.png",
-                    new Animation("run", "player/run.png", 0.15, 0.15, 0.15, 0.15, 0.15, 0.15)
-                ),
-                isPlayer
-            ),
-            isPlayer ? new PlayerController() : new Controller() {
-            },
-            new WalkAction(),
-            new TurnAction()
-        );
-        own(body, clientId);
-        return body;
-    }
-
-    private static void registerNodeRecursive(Node<?> node) {
-        SyncHandler.getInstance().register(node);
-        for (Node<?> child : node.getChildren()) {
-            registerNodeRecursive(child);
-        }
-    }
-
-    // TODO: implement proper client reconciliation
-    private static void own(Node<?> node, int clientId) {
-        node.owner = clientId;
-        for (Node<?> child : node.getChildren()) {
-            own(child, clientId);
-        }
     }
 }

@@ -37,9 +37,9 @@ public class Collider extends UndrawnNode {
     @Override
     public void initialize() {
         // Make sure parent is a Node2D
-        if (!(getParent() instanceof Node2D)) {
-            throw new RuntimeException("Collider must be child of Node2D");
-        }
+        // if (!(getParent() instanceof Node2D)) {
+        //     throw new RuntimeException("Collider must be child of Node2D");
+        // }
 
         super.initialize();
     }

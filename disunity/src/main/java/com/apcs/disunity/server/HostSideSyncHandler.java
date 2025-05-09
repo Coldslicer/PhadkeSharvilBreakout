@@ -1,11 +1,10 @@
 package com.apcs.disunity.server;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-public class HostSideSyncHandler extends SyncHandler implements Closeable {
+public class HostSideSyncHandler extends SyncHandler {
 
     private final Host host;
     private final List<TranscieverThread> threads = new LinkedList<>();
@@ -56,5 +55,5 @@ public class HostSideSyncHandler extends SyncHandler implements Closeable {
     public int getEndpointId() { return HOST_ID; }
 
     public int getPort() {return host.getPort();}
-    public String getAddress() {return host.getAddress();}
+    public String getAddress() {return host.getAddress(); }
 }

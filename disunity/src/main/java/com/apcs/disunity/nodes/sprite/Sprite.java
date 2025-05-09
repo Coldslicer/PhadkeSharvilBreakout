@@ -52,4 +52,14 @@ public class Sprite extends Node2D {
         super.draw(offset);
     }
 
+    public double getWidth() {
+        BufferedImage img = Resources.loadResource(getImage(), Image.class).getBuffer();
+        return img.getWidth();
+    }
+
+    public double getHeight() {
+        BufferedImage img = Resources.loadResource(getImage(), Image.class).getBuffer();
+        return img.getHeight();
+    }
+
 }

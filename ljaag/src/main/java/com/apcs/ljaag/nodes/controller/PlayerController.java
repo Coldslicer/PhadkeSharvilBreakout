@@ -12,6 +12,8 @@ import com.apcs.disunity.signals.Signals;
  */
 public class PlayerController extends Controller {
 
+    public static final int SPEED = 10;
+
     /* ================ [ NODE ] ================ */
 
     /**
@@ -22,19 +24,8 @@ public class PlayerController extends Controller {
     @Override
     public void update(double delta) {
         // Trigger walking
-        Vector2 walkDir = new Vector2(
-            (Inputs.getAction("left") ? -1 : 0) + (Inputs.getAction("right") ? 1 : 0),
-            (Inputs.getAction("up") ? -1 : 0) + (Inputs.getAction("down") ? 1 : 0)
-        ).normalized();
-
-        Signals.trigger(Signals.getSignal(getId(), "walk"), walkDir);
-
-        // Trigger animations
-        if (walkDir.length() > 0) {
-            Signals.trigger(Signals.getSignal(getId(), "animate"), "run");
-        } else {
-            Signals.trigger(Signals.getSignal(getId(), "animate"), "");
-        }
+        int axis = (Inputs.getAction("left") ? -1 : 0) + (Inputs.getAction("right") ? 1 : 0);
+        Signals.trigger(Signals.getSignal(getId(), "move"), Vector2.of(axis * SPEED, 0));
     }
     
 }
