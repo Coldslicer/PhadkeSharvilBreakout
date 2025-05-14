@@ -71,6 +71,7 @@ public class ScalableBuffer {
 
     // Draw image
     public void drawImage(Image img, Transform transform) {
+        
         // Image dimensions
         double imgWidth = img.getWidth(null);
         double imgHeight = img.getHeight(null);
@@ -88,6 +89,11 @@ public class ScalableBuffer {
         int height = (int) Math.round(imgHeight * _transform.scale.y * yScale);
 
         graphics.drawImage(img, xPos, yPos, width, height, null);
+    }
+
+    public void drawString(String text, Transform transform) {
+        // improve later
+        graphics.drawString(text, (int) transform.pos.x, (int) transform.pos.y);
     }
 
 }

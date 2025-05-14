@@ -24,6 +24,14 @@ public class BoundedBody extends Body {
 
     private List<Supplier<Bounds>> bounds = new LinkedList<>();
     private BiConsumer<BoundedBody, Direction> consumer;
+    private boolean autoAlign = true;
+
+    public BoundedBody autoAlign(boolean value) {
+        autoAlign = value;
+        return this;
+    }
+
+
 
     public BoundedBody(Transform bounds, BiConsumer<BoundedBody, Direction> collisionAction) {
         this.bounds.add(() -> new Bounds(bounds));
@@ -32,6 +40,12 @@ public class BoundedBody extends Body {
 
     public BoundedBody(Transform bounds) {
         this(bounds, (body,dir) -> {});
+    }
+
+    public BoundedBody(Supplier<Transform> bounds, BiConsumer<BoundedBody, Direction> collisionAction, Node... nodes) {
+        super(nodes);
+        this.bounds.add(() -> new Bounds(bounds.get()));
+        consumer = collisionAction;
     }
 
     public BoundedBody(Supplier<Transform> bounds, BiConsumer<BoundedBody, Direction> collisionAction) {
@@ -101,44 +115,52 @@ public class BoundedBody extends Body {
             if (bounds.interior) {
                 
                 if (myLeftWallX < theirLeftWallX) {
-                    transform = transform.move(Vector2.of(theirLeftWallX - myLeftWallX, 0));
+                    if (autoAlign) transform = transform.move(Vector2.of(theirLeftWallX - myLeftWallX, 0));
                     consumer.accept(this, Direction.LEFT);
+                    bounds.notify(this, Direction.LEFT);
                 }
 
                 if (myRightWallX > theirRightWallX) {
-                    transform = transform.move(Vector2.of(theirRightWallX - myRightWallX, 0));
+                    if (autoAlign) transform = transform.move(Vector2.of(theirRightWallX - myRightWallX, 0));
                     consumer.accept(this, Direction.RIGHT);
+                    bounds.notify(this, Direction.RIGHT);
                 }
 
                 if (myLowerWallY < theirLowerWallY) {
-                    transform = transform.move(Vector2.of(0, theirLowerWallY - myLowerWallY));
+                    if (autoAlign) transform = transform.move(Vector2.of(0, theirLowerWallY - myLowerWallY));
                     consumer.accept(this, Direction.DOWN);
+                    bounds.notify(this, Direction.DOWN);
                 }
 
                 if (myUpperWallY > theirUpperWallY) {
-                    transform = transform.move(Vector2.of(0, theirUpperWallY - myUpperWallY));
+                    if (autoAlign) transform = transform.move(Vector2.of(0, theirUpperWallY - myUpperWallY));
                     consumer.accept(this, Direction.UP);
+                    bounds.notify(this, Direction.UP);
                 }
             } else {
 
                 if (myRightWallX > theirLeftWallX && myLeftWallX < theirLeftWallX && (myLowerWallY < theirUpperWallY && myUpperWallY > theirLowerWallY)) {
-                    transform = transform.move(Vector2.of(theirLeftWallX - myRightWallX, 0));
+                    if (autoAlign) transform = transform.move(Vector2.of(theirLeftWallX - myRightWallX, 0));
                     consumer.accept(this, Direction.LEFT);
+                    bounds.notify(this, Direction.LEFT);
                 }
 
                 if (myLeftWallX < theirRightWallX && myRightWallX > theirRightWallX && (myLowerWallY < theirUpperWallY && myUpperWallY > theirLowerWallY)) {
-                    transform = transform.move(Vector2.of(theirRightWallX - myLeftWallX, 0));
+                    if (autoAlign) transform = transform.move(Vector2.of(theirRightWallX - myLeftWallX, 0));
                     consumer.accept(this, Direction.RIGHT);
+                    bounds.notify(this, Direction.RIGHT);
                 }
 
                 if (myLowerWallY < theirUpperWallY && myUpperWallY > theirUpperWallY && (myRightWallX > theirLeftWallX && myLeftWallX < theirRightWallX)) {
-                    transform = transform.move(Vector2.of(0, theirUpperWallY - myLowerWallY));
+                    if (autoAlign) transform = transform.move(Vector2.of(0, theirUpperWallY - myLowerWallY));
                     consumer.accept(this, Direction.DOWN);
+                    bounds.notify(this, Direction.DOWN);
                 }
 
                 if (myUpperWallY > theirLowerWallY && myLowerWallY < theirLowerWallY && (myRightWallX > theirLeftWallX && myLeftWallX < theirRightWallX)) {
-                    transform = transform.move(Vector2.of(0, theirLowerWallY - myUpperWallY));
+                    if (autoAlign) transform = transform.move(Vector2.of(0, theirLowerWallY - myUpperWallY));
                     consumer.accept(this, Direction.UP);
+                    bounds.notify(this, Direction.UP);
                 }
                 
             }
@@ -149,6 +171,12 @@ public class BoundedBody extends Body {
         private final Transform t;
         private final boolean interior;
         private boolean isActive;
+        private BiConsumer<BoundedBody, Direction> action = null;
+
+        public Bounds(Transform t, boolean interior, boolean isActive, BiConsumer<BoundedBody, Direction> action) {
+            this(t, interior, isActive);
+            this.action = action;
+        }
 
         public Bounds(Transform t, boolean interior, boolean isActive) {
             this.t = t;
@@ -156,8 +184,16 @@ public class BoundedBody extends Body {
             this.isActive = isActive;
         }
 
+        public Bounds(Transform t, boolean interior, BiConsumer<BoundedBody, Direction> action) {
+            this(t, interior, true, action);
+        }
+
         public Bounds(Transform t, boolean interior) {
             this(t, interior, true);
+        }
+
+        public Bounds(Transform t, BiConsumer<BoundedBody, Direction> action) {
+            this(t, true, true, action);
         }
 
         public Bounds(Transform t) {
@@ -178,6 +214,10 @@ public class BoundedBody extends Body {
 
         public void setActive(boolean isActive) {
             this.isActive = isActive;
+        }
+
+        public void notify(BoundedBody other, Direction d) {
+            if (action != null) action.accept(other, d);
         }
     }
 }

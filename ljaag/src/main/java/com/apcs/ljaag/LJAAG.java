@@ -1,5 +1,6 @@
 package com.apcs.ljaag;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -19,6 +20,29 @@ import com.apcs.ljaag.nodes.BoundedBody;
 import com.apcs.ljaag.nodes.action.WalkAction;
 import com.apcs.ljaag.nodes.controller.PlayerController;
 
+/*
+REQUIRED:
+
+
+Have a title screen with a Play button
+
+
+Have two levels, winning the game after the second level is finished
+
+
+Have three lives, losing the game when lives reaches zero
+
+
+Pause the game before the ball starts moving, until the user clicks or presses the SPACE key
+
+
+Have visual effects and sound effects for all interactions
+
+
+Have game over and game won messages, followed by taking the player back to the main menu
+
+ */
+
 /**
  * Untitled game
  *
@@ -37,6 +61,18 @@ public class LJAAG {
         BoundedBody player, ball;
         List<Supplier<BoundedBody.Bounds>> addedColliderBodies;
         Inputs.fromJSON("keybinds.json");
+        Scenes.addScene("title", new Node2D(
+                new Camera(),
+                new Sprite("images/breakout_pieces_1.png")
+            ) {
+                @Override
+                public void draw(Transform offset) {
+                    super.draw(offset);
+                    Game.getInstance().getBuffer().drawString("placeholder", new Transform());
+                }
+            }
+        );
+        
         Scenes.addScene("test", new Node2D(
             new Camera(),
             player = new BoundedBody(new Transform(Vector2.ZERO, bounds, 1),
@@ -63,7 +99,7 @@ public class LJAAG {
                         new Transform(
                             player.transform.pos,
                             Vector2.of(player.getChild(Sprite.class).getWidth(), player.getChild(Sprite.class).getHeight()),
-                         1),
+                         0),
                      false)
                      )),
                 (body, dir) -> {
@@ -103,18 +139,31 @@ public class LJAAG {
         );
 
         Sprite model = new Sprite("images/brick.png",false);
+        List<Supplier<BoundedBody.Bounds>> brickSuppliers = new ArrayList<>(1);
+        brickSuppliers.add(() -> new BoundedBody.Bounds(new Transform(
+            ball.transform.pos,
+            Vector2.of(ball.getChild(Sprite.class).getWidth(), ball.getChild(Sprite.class).getHeight()),
+         0), false));
         int padding = 1;
         
         for (int x = -bounds.xi; x < bounds.xi; x += model.getWidth() + padding) {
             for (int y = -bounds.yi; y < 0; y += model.getHeight() + padding) {
-                Sprite brick = new Sprite("images/brick.png", new Transform(Vector2.of(x, y), Vector2.UNIT, 0));
-                addedColliderBodies.add(() -> new BoundedBody.Bounds(new Transform(brick.transform.pos, Vector2.of(brick.getWidth(),brick.getHeight()),0), false));
-                
+                final int xf = x, yf = y;
+                Sprite brick = new Sprite("images/brick.png", new Transform(Vector2.ZERO, Vector2.UNIT, 0));
+                Supplier<BoundedBody.Bounds> supplier;
+                supplier = () -> new BoundedBody.Bounds(
+                    new Transform(Vector2.of(xf,yf), Vector2.of(brick.getWidth(),brick.getHeight()),0), 
+                    false, brick.isVisible()) {
+                        @Override
+                        public void notify(BoundedBody b, BoundedBody.Direction d) {
+                            brick.setVisible(false);
+                        }
+                    };
+                addedColliderBodies.add(supplier);
                 Scenes.getScene().addChild(
-                    new BoundedBody(new Transform(Vector2.of(x, y), Vector2.UNIT, 0), (bo, d) -> {
-                            // System.out.println("collision");
-                            if (bo == ball) brick.setVisible(false);
-                        }, 
+                    new BoundedBody(
+                        brickSuppliers,
+                        (bo, d) -> {}, 
                         brick,
                         new Collider(Vector2.ZERO),
                         new Controller() {}
@@ -123,11 +172,12 @@ public class LJAAG {
                         @Override
                         public void initialize() {
                             super.initialize();
+                            transform = new Transform(Vector2.of(xf,yf), Vector2.UNIT, 0);
                             Collider c = getChild(Collider.class);
                             Sprite s = getChild(Sprite.class);
                             c.setSize(Vector2.of(s.getWidth(), s.getHeight()));
                         };
-                    }
+                    }.autoAlign(false)
                 );
             }
         }
