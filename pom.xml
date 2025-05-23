@@ -1,52 +1,56 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.apcs</groupId>
-    <artifactId>game</artifactId>
-    <version>1.0.0</version>
-    <packaging>pom</packaging>
-
-    <modules>
-        <module>disunity</module>
-        <module>ljaag</module>
-    </modules>
+    <artifactId>revival</artifactId>
+    <version>1.0.1</version>
 
     <properties>
-        <maven.compiler.release>21</maven.compiler.release>
-        <maven.compiler.plugin.version>3.14.0</maven.compiler.plugin.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.release>17</maven.compiler.release> <!-- Java 17 -->
+        <javafx.version>21</javafx.version>
+        <javafx.platform>mac-aarch64</javafx.platform> <!-- For M1/M2 Macs -->
     </properties>
 
     <dependencies>
         <dependency>
-            <groupId>com.apcs</groupId>
-            <artifactId>processor</artifactId>
-            <version>1.0.0</version>
-            <scope>compile</scope>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>${javafx.platform}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>${javafx.platform}</classifier>
         </dependency>
     </dependencies>
 
-    <repositories>
-        <repository>
-            <id>github</id>
-            <url>https://maven.pkg.github.com/hem1sphereCHS/FieldTypeEnforcer</url>
-        </repository>
-    </repositories>
-
     <build>
         <plugins>
+            <!-- Compiler plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>${maven.compiler.plugin.version}</version>
+                <version>3.11.0</version>
                 <configuration>
-                    <annotationProcessors>
-                        com.apcs.disunity.annotations.FieldTypeEnforcer
-                    </annotationProcessors>
+                    <release>${maven.compiler.release}</release>
+                </configuration>
+            </plugin>
+
+            <!-- JavaFX plugin -->
+            <plugin>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-maven-plugin</artifactId>
+                <version>0.0.8</version>
+                <configuration>
+                    <mainClass>com.apcs.App</mainClass>
+                    <compileModulePath>false</compileModulePath> <!-- Use classpath, not module path -->
                 </configuration>
             </plugin>
         </plugins>
     </build>
-
 </project>
